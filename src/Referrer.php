@@ -506,6 +506,43 @@ class Referrer {
 	}
 
 	/**
+	 * Get simplified referrer source for analytics.
+	 *
+	 * Returns the specific platform name (google, facebook, etc.)
+	 * or a generic type (direct, internal, referral).
+	 *
+	 * @param string|null $referrer Optional referrer URL.
+	 *
+	 * @return string Traffic source identifier.
+	 */
+	public static function get_source( ?string $referrer = null ): string {
+		$referrer = $referrer ?? self::get();
+
+		if ( empty( $referrer ) ) {
+			return 'direct';
+		}
+
+		// Check for specific search engine
+		$search_engine = self::get_search_engine( $referrer );
+		if ( $search_engine ) {
+			return $search_engine;
+		}
+
+		// Check for specific social platform
+		$social_platform = self::get_social_platform( $referrer );
+		if ( $social_platform ) {
+			return $social_platform;
+		}
+
+		// Check if internal
+		if ( self::is_internal( $referrer ) ) {
+			return 'internal';
+		}
+
+		return 'referral';
+	}
+
+	/**
 	 * Get comprehensive referrer information.
 	 *
 	 * @param string|null $referrer Optional referrer URL.
