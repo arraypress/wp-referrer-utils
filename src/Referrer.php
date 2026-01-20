@@ -678,6 +678,34 @@ class Referrer {
 	}
 
 	/**
+	 * Get UTM parameter type options.
+	 *
+	 * @param bool        $as_value_label Optional. Return as value/label format. Default false.
+	 * @param string|null $context        Optional. The context in which the options are being used.
+	 *
+	 * @return array Array of UTM parameter options.
+	 */
+	public static function get_utm_parameter_options( bool $as_value_label = false, ?string $context = null ): array {
+		$options = [
+			'source'   => __( 'Source (utm_source)', 'arraypress' ),
+			'medium'   => __( 'Medium (utm_medium)', 'arraypress' ),
+			'campaign' => __( 'Campaign (utm_campaign)', 'arraypress' ),
+			'term'     => __( 'Term (utm_term)', 'arraypress' ),
+			'content'  => __( 'Content (utm_content)', 'arraypress' ),
+		];
+
+		/**
+		 * Filters the UTM parameter options.
+		 *
+		 * @param array       $options The UTM parameter options.
+		 * @param string|null $context The context in which the options are being used.
+		 */
+		$options = apply_filters( 'arraypress_referrer_utm_parameter_options', $options, $context );
+
+		return $as_value_label ? self::to_value_label( $options ) : $options;
+	}
+
+	/**
 	 * Check if referrer matches specific criteria.
 	 *
 	 * @param string|array $criteria Search engine, social platform, or traffic source to match.
