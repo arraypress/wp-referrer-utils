@@ -367,7 +367,7 @@ class Referrer {
 		parse_str( $parsed['query'], $params );
 
 		foreach ( self::$search_params as $param ) {
-			if ( isset( $params[ $param ] ) && ! empty( $params[ $param ] ) ) {
+			if ( ! empty( $params[ $param ] ) ) {
 				return sanitize_text_field( $params[ $param ] );
 			}
 		}
@@ -448,6 +448,28 @@ class Referrer {
 			'term'     => isset( $params['utm_term'] ) ? sanitize_text_field( $params['utm_term'] ) : null,
 			'content'  => isset( $params['utm_content'] ) ? sanitize_text_field( $params['utm_content'] ) : null,
 		];
+	}
+
+	/**
+	 * Get a specific UTM parameter value.
+	 *
+	 * @param string      $parameter The UTM parameter to retrieve: 'source', 'medium', 'campaign', 'term', or
+	 *                               'content'.
+	 * @param string|null $referrer  Optional referrer URL.
+	 *
+	 * @return string|null The parameter value or null if not found.
+	 */
+	public static function get_utm_parameter( string $parameter, ?string $referrer = null ): ?string {
+		$valid_params = [ 'source', 'medium', 'campaign', 'term', 'content' ];
+		$parameter    = strtolower( trim( $parameter ) );
+
+		if ( ! in_array( $parameter, $valid_params, true ) ) {
+			return null;
+		}
+
+		$utm_params = self::get_utm_parameters( $referrer );
+
+		return $utm_params[ $parameter ] ?? null;
 	}
 
 	/**
