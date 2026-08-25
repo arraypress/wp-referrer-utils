@@ -11,6 +11,7 @@ A lightweight WordPress library for detecting and analyzing HTTP referrers. Perf
 * 🔗 **Domain Operations**: Check internal vs external referrers
 * 🌐 **Search Engine Detection**: Identify 10+ search engines and extract search terms
 * 📱 **Social Media Detection**: Recognize 13+ social platforms
+* 🧹 **Tracking Cleanup**: Strip advertising parameters from URLs without breaking them
 * 🛡️ **WordPress Native**: Uses WordPress sanitization and validation
 
 ## Requirements
@@ -259,6 +260,45 @@ add_action( 'wp_head', 'personalize_content_by_source' );
 ### Analysis
 - `get_traffic_source( ?string $referrer )` - Get traffic source type
 - `get_referrer_info( ?string $referrer )` - Get comprehensive referrer information
+
+### Tracking (`Tracking`)
+- `strip( string $url, array $extra = [], array $keep = [] )` - Remove tracking parameters
+- `has( string $url, array $extra = [], array $keep = [] )` - Check for tracking parameters
+- `extract( string $url, array $extra = [], array $keep = [] )` - Read them before stripping
+
+## Cleaning Tracking Parameters
+
+```php
+use ArrayPress\ReferrerUtils\Tracking;
+
+$url = 'https://example.com/checkout?step=2&utm_source=newsletter&fbclid=abc123';
+
+// Record the attribution, then store a canonical URL.
+$attribution = Tracking::extract( $url );
+// [ 'utm_source' => 'newsletter', 'fbclid' => 'abc123' ]
+
+$clean = Tracking::strip( $url );
+// https://example.com/checkout?step=2
+
+if ( Tracking::has( $url ) ) {
+    // ...
+}
+```
+
+Every name in the list is vendor-namespaced — `utm_*`, `gclid`, `fbclid`,
+`mc_eid`, the Piwik and Matomo families, and so on. Generic parameters such as
+`s`, `v`, `ref`, `type` and `from` are deliberately **not** included: they carry
+tracking on some sites and application state on others, and a global list cannot
+tell the two apart. WordPress uses `s` for search and YouTube uses `v` for the
+video id, so a list containing them silently destroys the URLs it is asked to
+clean.
+
+Pass site-specific names as the second argument, and protect names as the third:
+
+```php
+Tracking::strip( $url, [ 'partner_id' ] );      // also remove
+Tracking::strip( $url, [], [ 'utm_source' ] );  // keep, remove the rest
+```
 
 ## WordPress Integration
 
