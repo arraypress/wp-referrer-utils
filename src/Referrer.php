@@ -28,6 +28,77 @@ class Referrer {
 	 *
 	 * @var array
 	 */
+	/**
+	 * Two-label public suffixes, where the registered domain is the third
+	 * label from the end rather than the second.
+	 *
+	 * Not the full Public Suffix List -- that is several thousand entries and
+	 * a dependency that has to be kept current. This is the set that covers
+	 * the countries this library already tracks search engines for, which is
+	 * where its referrers actually come from. A suffix that is not listed
+	 * falls back to the last two labels, which is right for the great
+	 * majority of domains.
+	 *
+	 * @var string[]
+	 */
+	protected const COMPOUND_SUFFIXES = [
+		'co.uk',
+		'org.uk',
+		'me.uk',
+		'ac.uk',
+		'gov.uk',
+		'net.uk',
+		'sch.uk',
+		'com.au',
+		'net.au',
+		'org.au',
+		'edu.au',
+		'gov.au',
+		'co.nz',
+		'net.nz',
+		'org.nz',
+		'govt.nz',
+		'co.za',
+		'org.za',
+		'co.jp',
+		'ne.jp',
+		'or.jp',
+		'ac.jp',
+		'go.jp',
+		'co.in',
+		'net.in',
+		'org.in',
+		'gov.in',
+		'ac.in',
+		'com.br',
+		'net.br',
+		'org.br',
+		'gov.br',
+		'com.mx',
+		'org.mx',
+		'com.ar',
+		'com.tr',
+		'gov.tr',
+		'com.sa',
+		'com.sg',
+		'com.hk',
+		'com.tw',
+		'com.cn',
+		'net.cn',
+		'org.cn',
+		'gov.cn',
+		'co.kr',
+		'or.kr',
+		'com.pl',
+		'com.es',
+		'com.co',
+		'co.il',
+		'com.my',
+		'com.ph',
+		'co.th',
+		'com.vn',
+	];
+
 	protected static array $search_engines = [
 		// Traditional search engines
 		'google'     => [
@@ -50,7 +121,7 @@ class Referrer {
 			'google.com.sa',
 			'google.ch',
 			'google.be',
-			'google.se'
+			'google.se',
 		],
 		'bing'       => [ 'bing.com', 'www.bing.com' ],
 		'yahoo'      => [
@@ -66,7 +137,7 @@ class Referrer {
 			'yahoo.com.br',
 			'yahoo.com.mx',
 			'yahoo.ca',
-			'yahoo.in'
+			'yahoo.in',
 		],
 		'duckduckgo' => [ 'duckduckgo.com', 'www.duckduckgo.com' ],
 		'baidu'      => [ 'baidu.com', 'www.baidu.com' ],
@@ -122,7 +193,7 @@ class Referrer {
 			'mobile.facebook.com',
 			'fb.me',
 			'fb.com',
-			'm.me'
+			'm.me',
 		],
 		'twitter'   => [
 			'twitter.com',
@@ -131,7 +202,7 @@ class Referrer {
 			'x.com',
 			'www.x.com',
 			'mobile.twitter.com',
-			'tweetdeck.twitter.com'
+			'tweetdeck.twitter.com',
 		],
 		'instagram' => [
 			'instagram.com',
@@ -140,18 +211,18 @@ class Referrer {
 			'web.instagram.com',
 			'touch.instagram.com',
 			'mobile.instagram.com',
-			'ig.me'
+			'ig.me',
 		],
 		'linkedin'  => [
 			'linkedin.com',
 			'www.linkedin.com',
 			'm.linkedin.com',
-			'lnkd.in'
+			'lnkd.in',
 		],
 		'pinterest' => [
 			'pinterest.com',
 			'www.pinterest.com',
-			'pin.it'
+			'pin.it',
 		],
 		'reddit'    => [
 			'reddit.com',
@@ -159,7 +230,7 @@ class Referrer {
 			'm.reddit.com',
 			'old.reddit.com',
 			'new.reddit.com',
-			'redd.it'
+			'redd.it',
 		],
 		'youtube'   => [
 			'youtube.com',
@@ -167,48 +238,48 @@ class Referrer {
 			'youtu.be',
 			'm.youtube.com',
 			'music.youtube.com',
-			'gaming.youtube.com'
+			'gaming.youtube.com',
 		],
 		'tiktok'    => [
 			'tiktok.com',
 			'www.tiktok.com',
 			'm.tiktok.com',
-			'vm.tiktok.com'
+			'vm.tiktok.com',
 		],
 		'snapchat'  => [
 			'snapchat.com',
 			'www.snapchat.com',
 			'story.snapchat.com',
-			'snap.com'
+			'snap.com',
 		],
 		'discord'   => [
 			'discord.com',
 			'www.discord.com',
 			'discord.gg',
-			'discordapp.com'
+			'discordapp.com',
 		],
 		'telegram'  => [
 			'telegram.org',
 			'www.telegram.org',
 			't.me',
-			'telegram.me'
+			'telegram.me',
 		],
 		'whatsapp'  => [
 			'whatsapp.com',
 			'www.whatsapp.com',
 			'wa.me',
-			'web.whatsapp.com'
+			'web.whatsapp.com',
 		],
 		'mastodon'  => [
 			'mastodon.social',
 			'mastodon.online',
 			'fosstodon.org',
 			'mastodon.world',
-			'mstdn.social'
+			'mstdn.social',
 		],
 		'threads'   => [
 			'threads.net',
-			'www.threads.net'
+			'www.threads.net',
 		],
 	];
 
@@ -222,10 +293,13 @@ class Referrer {
 			return null;
 		}
 
-		$referrer = wp_unslash( $_SERVER['HTTP_REFERER'] );
-		$referrer = wp_strip_all_tags( $referrer );
+		// esc_url_raw rather than a text sanitizer: a referrer is a URL, and
+		// this is the one that knows what that means -- it drops schemes that
+		// are not http(s) and percent-encodes what has no business being
+		// unencoded. Everything downstream parses this value.
+		$referrer = esc_url_raw( wp_unslash( (string) $_SERVER['HTTP_REFERER'] ) );
 
-		return ! empty( $referrer ) ? $referrer : null;
+		return '' !== $referrer ? $referrer : null;
 	}
 
 	/**
@@ -278,16 +352,25 @@ class Referrer {
 			return null;
 		}
 
-		// Remove www. prefix
-		$domain = preg_replace( '/^www\./', '', $domain );
+		$domain = self::without_www( $domain );
 
-		// Get the last two parts of the domain (e.g., example.com from sub.example.com)
 		$parts = explode( '.', $domain );
-		if ( count( $parts ) >= 2 ) {
-			return $parts[ count( $parts ) - 2 ] . '.' . $parts[ count( $parts ) - 1 ];
+		$count = count( $parts );
+
+		if ( $count < 3 ) {
+			return $domain;
 		}
 
-		return $domain;
+		// Taking the last two labels gives "co.uk" for every site in Britain,
+		// which groups the whole country together. Where the last two are a
+		// known compound suffix, take three.
+		$suffix = $parts[ $count - 2 ] . '.' . $parts[ $count - 1 ];
+
+		if ( in_array( $suffix, self::COMPOUND_SUFFIXES, true ) ) {
+			return $parts[ $count - 3 ] . '.' . $suffix;
+		}
+
+		return $parts[ $count - 2 ] . '.' . $parts[ $count - 1 ];
 	}
 
 	/**
@@ -337,7 +420,7 @@ class Referrer {
 		}
 
 		foreach ( self::$search_engines as $engine => $domains ) {
-			if ( in_array( $domain, $domains, true ) ) {
+			if ( self::domain_is_listed( $domain, $domains ) ) {
 				return $engine;
 			}
 		}
@@ -401,7 +484,7 @@ class Referrer {
 		}
 
 		foreach ( self::$social_platforms as $platform => $domains ) {
-			if ( in_array( $domain, $domains, true ) ) {
+			if ( self::domain_is_listed( $domain, $domains ) ) {
 				return $platform;
 			}
 		}
@@ -430,13 +513,28 @@ class Referrer {
 	public static function get_utm_parameters( ?string $referrer = null ): array {
 		$referrer = $referrer ?? self::get();
 
+		// The five keys are always present, even when there is nothing to put
+		// in them. This used to return an empty array for a URL with no query
+		// string, so get_campaign_source() and get_traffic_source() -- both of
+		// which read $params['source'] straight out -- raised an undefined key
+		// warning on every direct visit and every plain referral, which is
+		// most of them.
+		$empty = [
+			'source'   => null,
+			'medium'   => null,
+			'campaign' => null,
+			'term'     => null,
+			'content'  => null,
+		];
+
 		if ( ! self::is_valid( $referrer ) ) {
-			return [];
+			return $empty;
 		}
 
 		$parsed = parse_url( $referrer );
+
 		if ( ! isset( $parsed['query'] ) ) {
-			return [];
+			return $empty;
 		}
 
 		parse_str( $parsed['query'], $params );
@@ -792,11 +890,54 @@ class Referrer {
 	 *
 	 * @return string Current domain.
 	 */
+	/**
+	 * Is this domain one of the listed ones?
+	 *
+	 * Compared with any `www.` dropped from both sides, which is the whole
+	 * point of having this rather than in_array().
+	 *
+	 * Real referrers arrive as `www.google.com`; the table lists
+	 * `google.com`. A straight comparison meant Google -- twenty-one domains
+	 * of it -- was never recognised as a search engine at all, and every
+	 * search visit was counted as a plain referral. A handful of entries did
+	 * carry their `www.` form, which is why the tables looked fine and some
+	 * platforms worked.
+	 *
+	 * Fixing it here rather than doubling both tables: an entry added later
+	 * gets the behaviour for free, which is the way the mistake stays fixed.
+	 *
+	 * @param string   $domain  The referrer's host.
+	 * @param string[] $domains The domains listed for one engine or platform.
+	 *
+	 * @return bool
+	 */
+	protected static function domain_is_listed( string $domain, array $domains ): bool {
+		$domain = self::without_www( $domain );
+
+		foreach ( $domains as $listed ) {
+			if ( $domain === self::without_www( (string) $listed ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * A host with any leading `www.` removed.
+	 *
+	 * @param string $domain The host.
+	 *
+	 * @return string
+	 */
+	protected static function without_www( string $domain ): string {
+		return (string) preg_replace( '/^www\./i', '', strtolower( $domain ) );
+	}
+
 	protected static function get_current_domain(): string {
 		$site_url = get_option( 'siteurl' );
 		$parsed   = parse_url( $site_url );
 
 		return $parsed['host'] ?? '';
 	}
-
 }
